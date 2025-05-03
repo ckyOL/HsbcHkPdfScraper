@@ -23,12 +23,16 @@ class EnumSumAccountTypes:
     HKDCURRENT = 'HKD Current'
     FCYSAVINGS = 'FCY Savings'
     FCYCURRENT = 'FCY Current'
+    TIMEDEPOSIT = 'Time Deposit'
+    UNITTRUST = 'Unit Trusts'
 
 class AccountTypes:
     HKDSAVINGS = 'HKDSavings'
     HKDCURRENT = 'HKDCurrent'
     FCYSAVINGS = 'FCYSavings'
     FCYCURRENT = 'FCYCurrent'
+    TIMEDEPOSIT = 'TimeDeposit'
+    UNITTRUST = 'UnitTrust'
 
 
 class TableZone:
@@ -211,6 +215,15 @@ class TableZoneFcy(TableZone):
         desc = ""
         new_balance = 0.
         for index, row in self.table.iterrows():
+            # skip time deposit lines
+            if (
+                row.isnull().all() 
+                or str(row[0]).strip() == "Time"
+                or str(row[1]).strip() in ("Deposits", "")
+                or "Principal" in str(row[2])
+                or str(row[0]).strip().isdigit()
+                ):
+                continue
             # first line with new currency is previous balance
             if row[0] != ccy and row[0] != "":
                 if ccy != "":
@@ -266,7 +279,9 @@ class TableZoneSum(TableZone):
         EnumSumAccountTypes.HKDSAVINGS: AccountTypes.HKDSAVINGS,
         EnumSumAccountTypes.HKDCURRENT: AccountTypes.HKDCURRENT,
         EnumSumAccountTypes.FCYSAVINGS: AccountTypes.FCYSAVINGS,
-        EnumSumAccountTypes.FCYCURRENT: AccountTypes.FCYCURRENT
+        EnumSumAccountTypes.FCYCURRENT: AccountTypes.FCYCURRENT,
+        EnumSumAccountTypes.TIMEDEPOSIT: AccountTypes.TIMEDEPOSIT,
+        EnumSumAccountTypes.UNITTRUST: AccountTypes.UNITTRUST
     }
 
     def __init__(self, page_height, page_width, section, account, st_date):
@@ -293,9 +308,19 @@ class TableZoneSum(TableZone):
         # skip first 2 lines that are header part and account narrative
         for index, row in self.table[2:].iterrows():
             logger.debug("process row ({}): <{}>".format(index, row))
+            
+            # skip inverstment title
+            if row[0] == 'HSBC Premier\n- Investments':
+                continue
+
             if row[0] is not None and row[0] != "":
                 if row[0] == 'Total':
-                    self.summary['total_balance_hkd'] = self.extract_amount(row[6], row[7])
+                    total_amount = self.extract_amount(row[6], row[7])
+                    if self.summary['total_balance_hkd'] is None:
+                        self.summary['total_balance_hkd'] = total_amount
+                    else:
+                        # add investments total
+                        self.summary['total_balance_hkd'] += total_amount
                     continue
                 elif row[0] not in TableZoneSum.map_type.keys():
                     raise TemplateException("Summary contains an unknow Account type [{}]".format(row[0]))
