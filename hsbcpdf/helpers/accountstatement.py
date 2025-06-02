@@ -25,6 +25,7 @@ class EnumSumAccountTypes:
     FCYCURRENT = 'FCY Current'
     TIMEDEPOSIT = 'Time Deposit'
     UNITTRUST = 'Unit Trusts'
+    BOND = 'Bonds/Certificates of Deposit'
 
 class AccountTypes:
     HKDSAVINGS = 'HKDSavings'
@@ -33,6 +34,7 @@ class AccountTypes:
     FCYCURRENT = 'FCYCurrent'
     TIMEDEPOSIT = 'TimeDeposit'
     UNITTRUST = 'UnitTrust'
+    BOND = 'Bond'
 
 
 class TableZone:
@@ -281,7 +283,8 @@ class TableZoneSum(TableZone):
         EnumSumAccountTypes.FCYSAVINGS: AccountTypes.FCYSAVINGS,
         EnumSumAccountTypes.FCYCURRENT: AccountTypes.FCYCURRENT,
         EnumSumAccountTypes.TIMEDEPOSIT: AccountTypes.TIMEDEPOSIT,
-        EnumSumAccountTypes.UNITTRUST: AccountTypes.UNITTRUST
+        EnumSumAccountTypes.UNITTRUST: AccountTypes.UNITTRUST,
+        EnumSumAccountTypes.BOND: AccountTypes.BOND
     }
 
     def __init__(self, page_height, page_width, section, account, st_date):
@@ -311,6 +314,10 @@ class TableZoneSum(TableZone):
             
             # skip inverstment title
             if row[0] == 'HSBC Premier\n- Investments':
+                continue
+
+            # skip exchange rate
+            if row[0] == 'Exchange Rate':
                 continue
 
             if row[0] is not None and row[0] != "":
